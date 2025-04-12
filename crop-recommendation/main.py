@@ -1,11 +1,34 @@
-import pandas as pd
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from fastapi import FastAPI
+from pydantic import BaseModel
 import joblib
-import os
+import numpy as np
 
+app = FastAPI()
+
+# Load model and scaler
+model = joblib.load("crop_model.pkl")
+scaler = joblib.load("scaler.pkl")
+
+# Define input data structure
+class CropInput(BaseModel):
+    Nitrogen: float
+    Phosphorus: float
+    Potassium: float
+    Temperature: float
+    Humidity: float
+    pH_Value: float
+    Rainfall: float
+
+@app.post("/predict")
+def predict_crop(data: CropInput):
+    # Convert input to numpy array
+    input_data = np.array([[data.Nitrogen, data.Phosphorus, data.Potassium, 
+                            data.Temperature, data.Humidity, data.pH_Value, 
+                            data.Rainfall]])
+    
+    # Scale input
+    input_scaled = scaler.transform(input_data)
+    
+    # Predict
+    prediction = model.predict(input_scaled)[0]
+    return {"recommended_crop": prediction}
