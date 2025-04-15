@@ -8,3 +8,6 @@ jupyter
 notebook
 ipykernel
 flask
+uvicorn
+fastapi
+gunicorn
