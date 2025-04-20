@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-import joblib
 import numpy as np
+import joblib
 
 app = FastAPI()
 
@@ -9,7 +9,7 @@ app = FastAPI()
 model = joblib.load("crop_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-# Define input data structure
+# Define input schema
 class CropInput(BaseModel):
     Nitrogen: float
     Phosphorus: float
@@ -20,15 +20,19 @@ class CropInput(BaseModel):
     Rainfall: float
 
 @app.post("/predict")
-def predict_crop(data: CropInput):
-    # Convert input to numpy array
-    input_data = np.array([[data.Nitrogen, data.Phosphorus, data.Potassium, 
-                            data.Temperature, data.Humidity, data.pH_Value, 
-                            data.Rainfall]])
-    
-    # Scale input
-    input_scaled = scaler.transform(input_data)
-    
-    # Predict
-    prediction = model.predict(input_scaled)[0]
-    return {"recommended_crop": prediction}
+async def predict(data: CropInput):
+    try:
+        features = np.array([[
+            data.Nitrogen,
+            data.Phosphorus,
+            data.Potassium,
+            data.Temperature,
+            data.Humidity,
+            data.pH_Value,
+            data.Rainfall
+        ]])
+        scaled_features = scaler.transform(features)
+        prediction = model.predict(scaled_features)[0]
+        return {"crop": prediction}
+    except Exception as e:
+        return {"error": str(e)}
